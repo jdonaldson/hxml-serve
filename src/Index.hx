@@ -1,4 +1,5 @@
 import haxe.web.Dispatch;
+import neko.io.File;
 import neko.Web;
 import neko.Sys;
 import neko.Lib;
@@ -12,15 +13,29 @@ class Index {
 
 class Api{
     public function new(){}
-    public function doHxml(?file:String){
-        var hxmls = new List<String>();
-        if (file == '' || file == null){
-            var dirs = FileSystem.readDirectory(Sys.getCwd());
-            hxmls = dirs.filter(function(x) return ~/\.hxml$/.match(x));
+    public function doDefault(?file:String){
+        var html = "<html><body>";
+        var path = '.' + Web.getURI();
+        var dirs = FileSystem.readDirectory(Sys.getCwd());
+        var path = Sys.getCwd() + file;
+        if (FileSystem.exists(path)){
+            var file_str = File.getContent(path);
+            var targets = file_str.split("--next");
+            var r = ~/-(js|swf)\s*([\w\.\\\/]+)/;
+
+            for (t in targets){
+                if (r.match(t)){
+                    var target = r.matched(1);
+                    var file = r.matched(2);
+                    if (target == 'js'){
+                        var stub = '<link rel="javascript" type="text/javascript" href="'+file+'" />';
+                        html += stub;
+                    }
+                }
+            }
+
         }
-        Lib.print(hxmls.join(", "));
-    }
-    public function doDefault(){
-        trace('default');
+        html += "</body></html>";
+        Lib.print(html);
     }
 }

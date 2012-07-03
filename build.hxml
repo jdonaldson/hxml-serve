@@ -1,2 +1,7 @@
 -neko bin/index.n
+-cp src
 -main Index
+--next
+-js bin/test.js
+-main Test
+-cp src
