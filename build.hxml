@@ -1,2 +1,2 @@
--neko index.n
+-neko bin/index.n
 -main Index
