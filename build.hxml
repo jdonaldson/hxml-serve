@@ -5,3 +5,7 @@
 -js bin/test.js
 -main Test
 -cp src
+--next
+-swf bin/test.swf
+-cp src 
+-main Test
