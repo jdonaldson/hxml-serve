@@ -1,6 +1,7 @@
 -neko bin/index.n
 -cp src
 -main Index
+-lib tora
 --next
 -js bin/test.js
 -main Test
@@ -9,3 +10,8 @@
 -swf bin/test.swf
 -cp src 
 -main Test
+--next
+-js bin/test.js
+-main Test
+-cp src
+# @tm-preview

@@ -1,4 +1,5 @@
 import haxe.web.Dispatch;
+import sys.io.Process;
 import haxe.io.Bytes;
 import haxe.Template;
 import neko.io.File;
@@ -14,7 +15,7 @@ class Index {
         var rel_path = "." + uri;
         var ext = r.match(rel_path) ? r.matched(1) : '';
 
-        if (!FileSystem.exists(rel_path)){
+        if (!FileSystem.exists(rel_path)|| FileSystem.isDirectory(rel_path)){
             Web.setHeader("Content-Type",'text/plain');
             Lib.print("File does not exist");
             return;
@@ -30,19 +31,20 @@ class Index {
            Web.setHeader("Content-Type", "text/html");
            var content = File.getContent(rel_path);
            var targets = content.split("--next");
-           var target_html = targets.map(function(text){
+           var target_html = targets.mapi(function(i,hxml){
                var r = ~/^\s*-(cpp|java|js|neko|swf9?)\s*([^\s]+)/;
                var res = '';
-               if (r.match(text)){
+               if (r.match(hxml)){
                     var target = r.matched(1);
-                    var output = r.matched(2);
+                    var output_file = r.matched(2);
                     var render = 
                     switch (target ){
                         case 'js': js;
                         case 'swf': swf;
-                        default : function(x,y) return '';
+                        case 'neko':neko;
+                        default : function(x,y,i) return '';
                     }
-                    res = render(text,output);
+                    res = render(hxml,output_file,i);
 
                }
                return res;
@@ -51,10 +53,10 @@ class Index {
         }
     }
 
-    public static function swf(text:String, output:String){
+    public static function swf(hxml:String, output:String,id:Int){
         var tss = new Template('
             <h1>SWF Output</h1>
-            <pre>::text::</pre>
+            <pre>::hxml::</pre>
             <object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"
             codebase=
             "http://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab"
@@ -66,25 +68,43 @@ class Index {
                 pluginspage="http://www.adobe.com/go/getflashplayer">
             </object>
         ');
-        return tss.execute({text:text,output:output});
+        return tss.execute({hxml:hxml,output:output, id:id});
     }
 
-    public static function js(text:String, output:String){
+    public static function js(hxml:String, output:String, id:Int){
         var tjs = new Template('
                 <h1>JS Output</h1>
-                <pre>::text::</pre>
-                <link rel="javascript" type="text/javascript" href="::output::">
+                <pre>::hxml::</pre>
+                <div id="haxe:trace"></div>
+                <script>
+                    log_override = function(str,pos){
+                       console.log(str);
+                       var child = document.createTextNode(str);
+                       document.getElementById("haxe:trace")
+                                .appendChild(child);
+                    }
+                    console.log = log_override;
+                </script>
+                <script type="text/javascript" src="::output::"></script>
+                <script>
+                    document.getElementById("haxe:trace").id = "haxe:trace::id::";
+                </script>
                 ');
-        return tjs.execute({text:text,output:output});
+        return tjs.execute({hxml:hxml,output:output, id:id});
     }
 
-    public static function neko(target:String, output:String){
+    public static function neko(hxml:String, output:String, id:Int){
+
+        var p = new Process('command',['neko ' + output]);
+        p.exitCode();
+        var result = p.stdout.readAll().toString();
+        p.close();
         var tns = new Template('
                 <h1>Neko Output</h1>
-                <pre>::target::</pre>
-                <link rel="javascript" type="text/javascript" href="::output::">
+                <pre>::hxml::</pre>
+                <pre>::result::<pre>
                 ');
-        return tns.execute({target:target,output:output});
+        return tns.execute({hxml:hxml,result:result, id:id});
     }
 }
 
